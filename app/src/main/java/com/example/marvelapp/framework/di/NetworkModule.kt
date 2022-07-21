@@ -1,5 +1,6 @@
 package com.example.marvelapp.framework.di
 
+import com.example.core.data.network.interceptor.AuthorizationInterceptor
 import com.example.marvelapp.BuildConfig
 import dagger.Module
 import dagger.Provides
@@ -9,6 +10,7 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.util.*
 import java.util.concurrent.TimeUnit
 
 @Module //cara que sabe criar as dependencias
@@ -28,11 +30,22 @@ object NetworkModule {
     }
 
     @Provides
+    fun provideAuthorizationInterceptor():AuthorizationInterceptor{
+        return AuthorizationInterceptor(
+            BuildConfig.PUBLIC_KEY,
+            BuildConfig.PRIVATE_KEY,
+            Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+        )
+    }
+
+    @Provides
     fun provideOkHttpClient(
         loggingInterceptor: HttpLoggingInterceptor,
+        authorizationInterceptor: AuthorizationInterceptor
      ): OkHttpClient {
         return OkHttpClient.Builder()
             .addInterceptor(loggingInterceptor)
+            .addInterceptor(authorizationInterceptor)
             .readTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .connectTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .build()
@@ -42,7 +55,6 @@ object NetworkModule {
     fun provideGsonConverterFactory(): GsonConverterFactory {
         return GsonConverterFactory.create()
     }
-
 
     @Provides
     fun provideRetrofit(okHttpClient: OkHttpClient,
